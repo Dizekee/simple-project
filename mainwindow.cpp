@@ -559,7 +559,7 @@ void MainWindow::addHistory(const QVector<double> &spectrum_dB, double df)
         ui->waterfall->xAxis->setRange(xMin, xMax);
     }
 
-    ui->waterfall->replot();
+    ui->waterfall->replot(QCustomPlot::rpQueuedReplot);
 }
 
 
