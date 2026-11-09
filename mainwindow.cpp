@@ -438,6 +438,8 @@ void MainWindow::setSpectrumSize() {
     }
     m_spectrum_size = size;
     m_spectrum_score = 0;
+    initFFT(size);
+    spectrumHistory.clear();
 }
 
 void MainWindow::plotSpectrum() {
