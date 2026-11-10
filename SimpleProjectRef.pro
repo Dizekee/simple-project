@@ -18,12 +18,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     HarmonicGenerator.cpp \
+    dumpmanager.cpp \
     main.cpp \
     mainwindow.cpp \
     qcustomplot.cpp
 
 HEADERS += \
     HarmonicGenerator.h \
+    dumpmanager.h \
     fftw/fftw3.h \
     fftw3.h \
     harmonic.h \

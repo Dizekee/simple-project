@@ -13,6 +13,7 @@
 #include "harmonic.h"
 #include "fftw3.h"
 #include "qcustomplot.h"
+#include "dumpmanager.h"
 
 static constexpr int HISTORY_DEPTH = 100;
 static const double DISPLAY_TIME_WINDOW = 0.001;
@@ -33,7 +34,7 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    static constexpr int CIRCULAR_BUFFER_SIZE = 300000;
+    static constexpr int CIRCULAR_BUFFER_SIZE = 2000000;
 
     circular_buffer m_buffer;
     QUdpSocket *m_udp_socket;
@@ -59,6 +60,7 @@ private:
     bool newSet = false;
     double maxValueInSpectrum = -30;
     double minValueInSpectrum = -100;
+    DumpManager dumpManager;
 
 
     void setTheHarmonicsParams();
@@ -85,6 +87,8 @@ private:
     void FPSCalculation();
     void setupWaterfall();
     void initFFT(int size);
+    void makeADump();
+    bool dumpSizeValid(int &dumpSize);
 
 };
 #endif // MAINWINDOW_H
