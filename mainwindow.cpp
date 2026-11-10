@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->setParams, &QPushButton::clicked, this, &MainWindow::onAddHarmonicClicked);
     connect(ui->switchChannel, &QPushButton::clicked, this, &MainWindow::switchChannel);
     connect(ui->setSpectruSize, &QPushButton::clicked, this, &MainWindow::setSpectrumSize);
+    connect(ui->makeADump, &QPushButton::clicked, this, &MainWindow::makeADump);
 
     m_buffer.data.resize(CIRCULAR_BUFFER_SIZE);
     m_buffer.data.fill(0);
@@ -438,11 +439,13 @@ void MainWindow::setSpectrumSize() {
     }
     m_spectrum_size = size;
     m_spectrum_score = 0;
+    initFFT(size);
+    spectrumHistory.clear();
 }
 
 void MainWindow::plotSpectrum() {
     const int buffer_size = static_cast<int>(m_buffer.data.size());
-    const int channel = m_broadcast_channel;
+    const int channel  = m_broadcast_channel;
 
     if (m_spectrum_size <= 0 || m_spectrum_size % 2 != 0) {
         qWarning() << "Invalid spectrum size:" << m_spectrum_size;
@@ -559,7 +562,7 @@ void MainWindow::addHistory(const QVector<double> &spectrum_dB, double df)
         ui->waterfall->xAxis->setRange(xMin, xMax);
     }
 
-    ui->waterfall->replot();
+    ui->waterfall->replot(QCustomPlot::rpQueuedReplot);
 }
 
 
@@ -586,4 +589,67 @@ void MainWindow::initFFT(int size) {
 void MainWindow::FPSCalculation() {
     ui->fps->setText(QString("fps: %1").arg(m_fps));
     m_fps = 0;
+}
+
+void MainWindow::makeADump() {
+    int dumpSize = 0;
+    if (!dumpSizeValid(dumpSize)) {
+        return;
+    }
+
+    const int formatIndex = ui->comboMenu->currentIndex();
+
+    QString filter;
+    QString defaultSuffix;
+    switch (formatIndex) {
+    case 0: filter = "DAT Files (*.dat)"; defaultSuffix = "dat"; break;
+    case 1: filter = "CSV Files (*.csv)"; defaultSuffix = "csv"; break;
+    case 2: filter = "JSON Files (*.bin)"; defaultSuffix = "json"; break;
+    default:
+        QMessageBox::warning(this, "Error", "Неизвестный формат дампа");
+        return;
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Сохранить дамп",
+        QString("dumps/dump_%1.%2")
+            .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"))
+            .arg(defaultSuffix),
+        filter);
+
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    bool ok = false;
+    switch (formatIndex) {
+    case 0:
+        ok = dumpManager.saveToDat(m_buffer.data, m_buffer.index, dumpSize, filePath);
+        break;
+    case 1:
+        ok = dumpManager.saveToCSV(m_buffer.data, m_buffer.index, dumpSize, filePath);
+        break;
+    case 2:
+        ok = dumpManager.saveToJSON(m_buffer.data, m_buffer.index, dumpSize, filePath);
+        break;
+    }
+
+    if (!ok) {
+        QMessageBox::warning(this, "Error", "Не удалось сохранить дамп");
+    }
+}
+
+bool MainWindow::dumpSizeValid(int &dumpSize) {
+    bool ok = false;
+    int size = ui->dumpSize->text().toInt(&ok);
+
+    if (!ok || size <= 0 || size > CIRCULAR_BUFFER_SIZE) {
+        QMessageBox::warning(this, "Error",
+                             QString("Enter the correct dump size (1..%1)").arg(CIRCULAR_BUFFER_SIZE));
+        return false;
+    }
+
+    dumpSize = size;
+    return true;
 }
